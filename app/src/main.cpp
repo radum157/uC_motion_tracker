@@ -11,10 +11,10 @@ PIRSensor pir;
 SentryServo sentry;
 ScannerServo scanner;
 
-volatile bool motion = false;
-volatile bool scannerMove = false;
+volatile bool motion{ false };
+volatile bool scannerMove{ false };
 
-hw_timer_t *scanTimer = nullptr;
+hw_timer_t *scanTimer{ nullptr };
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
 void print_time(unsigned long millis);
@@ -25,6 +25,22 @@ void init_servo();
 void IRAM_ATTR scanISR();
 void IRAM_ATTR pirISR();
 
+
+void scanner_loop(void *param)
+{
+	while (true) {
+		if (scannerMove) {
+			scannerMove = false;
+
+			pir.moving = true;
+			scanner.move();
+			pir.moving = false;
+		}
+
+		vTaskDelay(50);
+	}
+}
+
 void setup()
 {
 	Serial.begin(BAUD_RATE);
@@ -34,6 +50,8 @@ void setup()
 	init_servo();
 
 	pinMode(BUZZER_PIN, OUTPUT);
+
+	xTaskCreatePinnedToCore(scanner_loop, "Scanner", 2048, NULL, 1, NULL, 1);
 
 	delay(5000);
 
@@ -55,13 +73,8 @@ void loop()
 
 		tone(BUZZER_PIN, BUZZER_FREQ, 500);
 
-		delay(sentry.waitTime);
+		vTaskDelay(sentry.waitTime / portTICK_PERIOD_MS);
 		sentry.waitTime = 0;
-	}
-
-	if (scannerMove) {
-		scannerMove = false;
-		scanner.move();
 	}
 
 	sentry.smoothStep();

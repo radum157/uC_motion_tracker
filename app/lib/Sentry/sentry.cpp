@@ -2,8 +2,6 @@
 
 using namespace msentry;
 
-#include <ESP32Servo.h>
-
 SentryServo::~SentryServo()
 {
 	if (pin > 0) {
