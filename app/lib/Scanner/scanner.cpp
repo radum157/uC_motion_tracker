@@ -1,8 +1,7 @@
 #include <scanner.h>
+#include <util.h>
 
 using namespace msentry;
-
-const int ScannerServo::angles[ScannerServo::nrAngles] = { 0, 45, 90, 135, 180 };
 
 ScannerServo::~ScannerServo()
 {
@@ -15,13 +14,13 @@ void ScannerServo::move()
 {
 	idx += step;
 
-	if (idx == nrAngles) {
+	if (idx == msentry::scannerNrAngles) {
 		step = -1;
-		idx = nrAngles - 1;
+		idx = msentry::scannerNrAngles - 1;
 	} else if (idx == -1) {
 		step = 1;
 		idx = 0;
 	}
 
-	servo.write(ScannerServo::angles[idx]);
+	servo.write(msentry::scannerAngles[idx]);
 }

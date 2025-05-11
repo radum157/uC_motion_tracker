@@ -13,14 +13,13 @@ namespace msentry {
 		SentryServo(int8_t pin) : pin(pin) {}
 		~SentryServo();
 
-		void move();
-
+		void track();
 		void smoothStep();
 
 		Servo servo;
 		int8_t pin{ -1 };
 
-		int currentAngle{ 0 };
+		int currentAngle{ 90 };
 		int step{ 1 };
 
 		volatile uint32_t waitTime{ 0 };

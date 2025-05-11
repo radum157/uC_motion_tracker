@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <ESP32Servo.h>
+#include <util.h>
 
 namespace msentry {
 
@@ -16,11 +17,8 @@ namespace msentry {
 		Servo servo;
 		int8_t pin{ -1 };
 
-		int idx{ 0 };
+		int idx{ msentry::scannerNrAngles / 2 };
 		int step{ 1 };
-
-		static constexpr int nrAngles = 5;
-		static const int angles[nrAngles];
 	};
 
 } // namespace msentry

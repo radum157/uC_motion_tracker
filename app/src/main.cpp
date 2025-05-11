@@ -4,6 +4,7 @@
 #include <pir.h>
 #include <sentry.h>
 #include <scanner.h>
+#include <tonePWM.h>
 
 using namespace msentry;
 
@@ -34,6 +35,8 @@ void scanner_loop(void *param)
 
 			pir.moving = true;
 			scanner.move();
+
+			vTaskDelay(5);
 			pir.moving = false;
 		}
 
@@ -51,17 +54,19 @@ void setup()
 
 	pinMode(BUZZER_PIN, OUTPUT);
 
-	xTaskCreatePinnedToCore(scanner_loop, "Scanner", 2048, NULL, 1, NULL, 1);
+	delay(10000);
 
-	delay(5000);
+	xTaskCreatePinnedToCore(scanner_loop, "Scanner", 2048, NULL, 1, NULL, 1);
 
 	scanTimer = timerBegin(0, 80, true); // timer 0, prescaler 80 (1 tick per 80us), count up
 	timerAttachInterrupt(scanTimer, &scanISR, true);
 
 	timerAlarmWrite(scanTimer, 2000000, true);
-	timerAlarmEnable(scanTimer);
 
 	Serial.println("Ending Setup");
+	tonePWM(BUZZER_PIN, BUZZER_FREQ, ALERT_TIME);
+
+	timerAlarmEnable(scanTimer);
 }
 
 void loop()
@@ -71,7 +76,7 @@ void loop()
 		Serial.print("Motion detected at: ");
 		print_time(pir.lastDebounce);
 
-		tone(BUZZER_PIN, BUZZER_FREQ, 500);
+		tonePWM(BUZZER_PIN, BUZZER_FREQ, ALERT_TIME);
 
 		vTaskDelay(sentry.waitTime / portTICK_PERIOD_MS);
 		sentry.waitTime = 0;
@@ -87,8 +92,6 @@ void IRAM_ATTR scanISR()
 	portENTER_CRITICAL_ISR(&mux);
 
 	scannerMove = true;
-	sentry.motionIdx = -1;
-	sentry.waitTime = 1;
 
 	portEXIT_CRITICAL_ISR(&mux);
 }
@@ -99,8 +102,11 @@ void IRAM_ATTR pirISR()
 
 	if (pir.detect()) {
 		motion = true;
-		sentry.motionIdx = 1;
+
+		sentry.motionIdx = scanner.idx;
 		sentry.waitTime = WAIT_TIME;
+
+		scanner.idx -= scanner.step;
 	}
 
 	portEXIT_CRITICAL_ISR(&mux);
@@ -119,14 +125,14 @@ void init_servo()
 	sentry.servo.setPeriodHertz(SERVO_FREQ);
 	sentry.servo.attach(SENTRY_PIN, SERVO_MIN_PW, SERVO_MAX_PW);
 
-	sentry.servo.write(0);
+	sentry.servo.write(90);
 
 	scanner = ScannerServo(SCANNER_PIN);
 
 	scanner.servo.setPeriodHertz(SERVO_FREQ);
 	scanner.servo.attach(SCANNER_PIN, SERVO_MIN_PW, SERVO_MAX_PW);
 
-	scanner.servo.write(ScannerServo::angles[0]);
+	scanner.servo.write(msentry::scannerAngles[scanner.idx]);
 }
 
 void print_time(unsigned long millis)

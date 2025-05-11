@@ -14,8 +14,19 @@
 #define SERVO_MAX_PW 2400
 
 #define BUZZER_FREQ 200		// 200Hz
+#define ALERT_TIME 500		// 500ms
 
 #define BUZZER_PIN 18		// D18
 #define SCANNER_PIN 19		// D19
 #define SENTRY_PIN 22		// D22
 #define PIR_PIN 23			// D23
+
+namespace msentry {
+
+	static constexpr int scannerNrAngles = 5;
+	static const int scannerAngles[] = {
+		0, 45, 90, 135, 180
+	};
+
+} // namespace msentry
+

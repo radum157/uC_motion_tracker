@@ -9,15 +9,21 @@ SentryServo::~SentryServo()
 	}
 }
 
-void SentryServo::move()
+static inline int scannerToSentryAngle(int angle)
 {
-	if (motionIdx < 0) {
-		waitTime = 0;
-		return;
-	}
+	int dist = angle - 90;
+	return angle - dist / 3;
+}
 
-	servo.write(90);
-	currentAngle = 90;
+void SentryServo::track()
+{
+	int angle = msentry::scannerAngles[motionIdx];
+	angle = scannerToSentryAngle(angle);
+
+	servo.write(angle);
+	currentAngle = angle;
+
+	motionIdx = -1;
 }
 
 void SentryServo::smoothStep()
@@ -27,14 +33,14 @@ void SentryServo::smoothStep()
 
 	for (; currentAngle != target; currentAngle += step) {
 		if (waitTime != 0) {
-			move();
+			track();
 			return;
 		}
 
 		servo.write(currentAngle);
-		delay(delayTime);
+		vTaskDelay(delayTime / portTICK_PERIOD_MS);
 	}
 
-	delay(delayTime);
+	vTaskDelay(delayTime / portTICK_PERIOD_MS);
 	step = -step;
 }
