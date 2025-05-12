@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <esp_bt.h>
 
 #include <util.h>
 #include <pir.h>
@@ -26,22 +27,17 @@ void init_servo();
 void IRAM_ATTR scanISR();
 void IRAM_ATTR pirISR();
 
+void scanner_loop(void *param);
 
-void scanner_loop(void *param)
+
+void power_setup()
 {
-	while (true) {
-		if (scannerMove) {
-			scannerMove = false;
+	Serial.println("Power setup...");
 
-			pir.moving = true;
-			scanner.move();
+	btStop();
+	esp_bt_controller_disable();
 
-			vTaskDelay(5);
-			pir.moving = false;
-		}
-
-		vTaskDelay(50);
-	}
+	Serial.println("Power setup ended");
 }
 
 void setup()
@@ -50,13 +46,15 @@ void setup()
 	Serial.println("Beginning Setup");
 
 	init_pir();
+	power_setup();
+
 	init_servo();
 
 	pinMode(BUZZER_PIN, OUTPUT);
 
 	delay(10000);
 
-	xTaskCreatePinnedToCore(scanner_loop, "Scanner", 2048, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(scanner_loop, "Scanner", 1000, NULL, 1, NULL, 1);
 
 	scanTimer = timerBegin(0, 80, true); // timer 0, prescaler 80 (1 tick per 80us), count up
 	timerAttachInterrupt(scanTimer, &scanISR, true);
@@ -85,7 +83,22 @@ void loop()
 	sentry.smoothStep();
 }
 
+void scanner_loop(void *param)
+{
+	while (true) {
+		if (scannerMove) {
+			scannerMove = false;
 
+			pir.moving = true;
+			scanner.move();
+
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+			pir.moving = false;
+		}
+
+		vTaskDelay(50 / portTICK_PERIOD_MS);
+	}
+}
 
 void IRAM_ATTR scanISR()
 {

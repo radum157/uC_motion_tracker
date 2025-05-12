@@ -6,10 +6,10 @@
 
 namespace msentry {
 
-	class PIRSensor : PinComponent<INPUT> {
+	class PIRSensor : PinComponent<INPUT_PULLDOWN> {
 	public:
-		PIRSensor() : PinComponent<INPUT>() {};
-		PIRSensor(int8_t pin) : PinComponent<INPUT>(pin) {}
+		PIRSensor() : PinComponent<INPUT_PULLDOWN>() {};
+		PIRSensor(int8_t pin) : PinComponent<INPUT_PULLDOWN>(pin) {}
 
 		bool detect();
 
