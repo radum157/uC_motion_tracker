@@ -21,8 +21,6 @@ volatile bool wifiPrint{ false };
 hw_timer_t *scanTimer{ nullptr };
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
-SemaphoreHandle_t serialMux;
-
 void print_time(unsigned long millis);
 
 void init_pir();
@@ -57,10 +55,9 @@ void setup()
 	init_servo();
 
 	pinMode(BUZZER_PIN, OUTPUT);
+	noTonePWM(BUZZER_PIN);
 
 	delay(10000);
-
-	serialMux = xSemaphoreCreateMutex();
 
 	scanTimer = timerBegin(0, 80, true); // timer 0, prescaler 80 (1 tick per 80us), count up
 	timerAttachInterrupt(scanTimer, &scanISR, true);
@@ -68,6 +65,7 @@ void setup()
 	timerAlarmWrite(scanTimer, 2000000, true);
 
 	xTaskCreatePinnedToCore(scanner_loop, "Scanner", TASK_STACK_SIZE, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(wifi_loop, "WiFi", TASK_STACK_SIZE, NULL, 0, NULL, 1);
 
 	Serial.println("Ending Setup");
 	tonePWM(BUZZER_PIN, BUZZER_FREQ, ALERT_TIME);
@@ -79,6 +77,7 @@ void loop()
 {
 	if (motion) {
 		motion = false;
+
 		Serial.print("Motion detected at: ");
 		print_time(pir.lastDebounce);
 
@@ -123,6 +122,7 @@ void IRAM_ATTR pirISR()
 
 	if (pir.detect()) {
 		motion = true;
+		wifiPrint = true;
 
 		sentry.motionIdx = scanner.idx;
 		sentry.waitTime = WAIT_TIME;
@@ -149,7 +149,7 @@ void init_servo()
 	scanner.servo.setPeriodHertz(SERVO_FREQ);
 	scanner.servo.attach(SCANNER_PIN, SERVO_MIN_PW, SERVO_MAX_PW);
 
-	scanner.servo.write(msentry::scannerAngles[scanner.idx]);
+	scanner.servo.write(scannerAngles[scanner.idx]);
 }
 
 void print_time(unsigned long millis)

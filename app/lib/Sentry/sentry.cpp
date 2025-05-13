@@ -9,11 +9,15 @@ SentryServo::~SentryServo()
 	}
 }
 
-inline int scannerToSentryAngle(int angle)
-{
-	int dist = angle - 90;
-	return angle - dist / 3;
-}
+namespace msentry {
+
+	inline int scannerToSentryAngle(int angle)
+	{
+		int dist = angle - 90;
+		return angle - dist / 3;
+	}
+
+} // namespace msentry
 
 void SentryServo::track()
 {
