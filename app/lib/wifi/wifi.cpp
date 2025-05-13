@@ -8,94 +8,107 @@
 
 #define DATE_PREFIX "Last detection time\n"
 
-#define NTP_SERVER "pool.ntp.org"
-#define GMT_OFFSET_SEC (3 * 60 * 60)
+#define NTP_SERVER "pool.ntp.org"		// Time sync server
+#define GMT_OFFSET_SEC (3 * 60 * 60)	// GMT offset
 
 extern volatile bool wifiPrint;
 
 namespace msentry {
 
-	const char *ssid = "messi";
-	const char *password = "WaHo2859";
+	// Credentials
+	const char *ssid = "<ssid>";
+	const char *password = "<password>";
 
 	bool timeInitialized{ false };
 
+	// Wifi variables
 	WebServer server(80);
-
 	String date{ "Idle..." };
 
+	// Site HTML with some styling
 	String html = R"rawliteral(
-        <!DOCTYPE HTML><html>
-        <head>
-          <title>ESP32 Event Log</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-              margin: 0;
-              padding: 20px;
-              background-color: #f5f5f5;
-              color: #333;
-            }
-            h1 {
-              color: #0066cc;
-              text-align: center;
-              margin-bottom: 30px;
-            }
-            #log {
-              background-color: white;
-              border: 1px solid #ddd;
-              border-radius: 8px;
-              padding: 20px;
-              min-height: 60px;
-              font-size: 18px;
-              box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            }
-            .container {
-              max-width: 800px;
-              margin: 0 auto;
-            }
-            .status {
-              text-align: center;
-              margin-top: 20px;
-              font-size: 14px;
-              color: #666;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>ESP32 Event Log</h1>
-            <div id='log'>Waiting for event...</div>
-            <div class="status">Refreshing every 2 seconds...</div>
-          </div>
-          <script>
-            setInterval(() => {
-              fetch('/detect')
-                .then(res => res.text())
-                .then(txt => {
-                  document.getElementById('log').innerText = txt;
-                  console.log('Updated: ' + new Date().toLocaleTimeString());
-                })
-                .catch(err => {
-                  console.error('Error fetching data:', err);
-                });
-            }, 2000);
-          </script>
-        </body>
-        </html>
-      )rawliteral";
+		<!DOCTYPE HTML><html>
+		<head>
+		  <title>ESP32 Event Log</title>
+		  <meta name="viewport" content="width=device-width, initial-scale=1">
+		  <style>
+			body {
+			  font-family: Arial, Helvetica, sans-serif;
+			  margin: 0;
+			  padding: 20px;
+			  background-color: #f5f5f5;
+			  color: #333;
+			}
+			h1 {
+			  color: #0066cc;
+			  text-align: center;
+			  margin-bottom: 30px;
+			}
+			#log {
+			  background-color: white;
+			  border: 1px solid #ddd;
+			  border-radius: 8px;
+			  padding: 20px;
+			  min-height: 60px;
+			  font-size: 18px;
+			  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+			}
+			.container {
+			  max-width: 800px;
+			  margin: 0 auto;
+			}
+			.status {
+			  text-align: center;
+			  margin-top: 20px;
+			  font-size: 14px;
+			  color: #666;
+			}
+		  </style>
+		</head>
+		<body>
+		  <div class="container">
+			<h1>ESP32 Event Log</h1>
+			<div id='log'>Waiting for event...</div>
+			<div class="status">Refreshing every 2 seconds...</div>
+		  </div>
+		  <script>
+			setInterval(() => {
+			  fetch('/detect')
+				.then(res => res.text())
+				.then(txt => {
+				  document.getElementById('log').innerText = txt;
+				  console.log('Updated: ' + new Date().toLocaleTimeString());
+				})
+				.catch(err => {
+				  console.error('Error fetching data:', err);
+				});
+			}, 2000);
+		  </script>
+		</body>
+		</html>
+	  )rawliteral";
 
+	/**
+	 * '/' endpoint
+	 */
 	void serverRoot()
 	{
 		server.send(200, "text/html", html);
 	}
 
+	/**
+	 * '/detect' endpoint
+	 *
+	 * @return The last detection datetime
+	 */
 	void serverDetect()
 	{
 		server.send(200, "plain/text", date);
 	}
 
+	/**
+	 * Synchronizes datetime with NTP server
+	 */
 	bool initTime(bool log = true)
 	{
 		// NTP time synchronization
@@ -124,6 +137,7 @@ namespace msentry {
 		Serial.println("WiFi setup...");
 		WiFi.mode(WIFI_AP);
 
+		// Connection retry loop
 		while (WiFi.status() != WL_CONNECTED) {
 			WiFi.begin(ssid, password);
 			Serial.print("Connecting to WiFi.");
@@ -156,6 +170,9 @@ namespace msentry {
 		Serial.println("WiFi setup ended");
 	}
 
+	/**
+	 * Wifi (re)connect loop
+	 */
 	void wifiReconnect()
 	{
 		while (WiFi.status() != WL_CONNECTED) {
@@ -164,11 +181,12 @@ namespace msentry {
 			for (int i = 0; i < CONNECT_RETRIES && WiFi.status() != WL_CONNECTED; i++) {
 				delay(1000);
 			}
-
-			server.handleClient();
 		}
 	}
 
+	/**
+	 * Updates the date upon detection interrupt
+	 */
 	void refreshDate()
 	{
 		struct tm timeinfo;
@@ -198,23 +216,27 @@ namespace msentry {
 		WiFiClient client;
 
 		while (true) {
+			// Check for wifi connection
 			if (WiFi.status() != WL_CONNECTED) {
-				date = "WiFi is down :(\nReconnecting...";
 				wifiReconnect();
 				continue;
 			}
 
+			// Check for datetime sync
 			if (!timeInitialized) {
 				date = "Time not synchronized :<\nRetrying...";
+				server.handleClient();
 				timeInitialized = initTime();
 				continue;
 			}
 
+			// Interrupt signaled
 			if (wifiPrint) {
 				refreshDate();
 				wifiPrint = false;
 			}
 
+			// Handle requests
 			server.handleClient();
 			vTaskDelay(50 / portTICK_PERIOD_MS);
 		}
