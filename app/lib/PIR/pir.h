@@ -1,13 +1,20 @@
 #pragma once
 
-#include <utility>
+#define CALIBRATION_TIME 1000	// 1s
 
 namespace msentry {
 
+	/**
+	 * @brief
+	 * PIR Sensor class
+	 */
 	class PIRSensor {
 	public:
 		PIRSensor() {};
 
+		/**
+		 * @return True if motion is detected after a custom debounce period
+		 */
 		bool detect();
 
 		unsigned long debounceTime{ 3000 };

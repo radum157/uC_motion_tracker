@@ -6,7 +6,7 @@
 
 #include <time.h>
 
-#define DATE_PREFIX "Last detection time:\n"
+#define DATE_PREFIX "Last detection time\n"
 
 #define NTP_SERVER "pool.ntp.org"
 #define GMT_OFFSET_SEC (3 * 60 * 60)
@@ -15,8 +15,8 @@ extern volatile bool wifiPrint;
 
 namespace msentry {
 
-	const char *ssid = "<ssid>";
-	const char *password = "<password>";
+	const char *ssid = "messi";
+	const char *password = "WaHo2859";
 
 	bool timeInitialized{ false };
 

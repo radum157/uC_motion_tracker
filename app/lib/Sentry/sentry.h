@@ -10,9 +10,19 @@ namespace msentry {
 	class SentryServo {
 	public:
 		SentryServo() {};
+		SentryServo(uint8_t pin);
 		~SentryServo();
 
+		/**
+		 * @brief
+		 * Moves the scanner according to the angle at @a motionIdx in @a scannerAngles
+		 */
 		void track();
+
+		/**
+		 * @brief
+		 * Angle sweep from 0 to 180 and back
+		 */
 		void smoothStep();
 
 		Servo servo;

@@ -10,17 +10,21 @@
 
 using namespace msentry;
 
+// Peripherals
 PIRSensor pir;
 SentryServo sentry;
 ScannerServo scanner;
 
+// Interrupt variables
 volatile bool motion{ false };
 volatile bool scannerMove{ false };
 volatile bool wifiPrint{ false };
 
+// Timers + sync
 hw_timer_t *scanTimer{ nullptr };
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
+// Helper functions
 void printTime(unsigned long millis);
 
 void initPIR();
@@ -31,7 +35,9 @@ void IRAM_ATTR pirISR();
 
 void runScanner(void *param);
 
-
+/**
+ * Disables as much as possible to save power
+ */
 void powerSetup()
 {
 	Serial.println("Power setup...");
@@ -42,37 +48,50 @@ void powerSetup()
 	Serial.println("Power setup ended");
 }
 
+/**
+ * Sets up serial, peripherals, interrupts, timers, wifi etc.
+ */
 void setup()
 {
 	Serial.begin(BAUD_RATE);
 	Serial.println("Beginning Setup");
 
+	// Pir first to calibrate
 	initPIR();
 
+	// Power and wifi
 	powerSetup();
 	wifiSetup();
 
+	// Peripherals
 	initServo();
 
 	pinMode(BUZZER_PIN, OUTPUT);
 	noTonePWM(BUZZER_PIN);
 
-	delay(10000);
+	// Calibration period
+	delay(CALIBRATION_TIME);
 
+	// Start interrupts and vtasks
 	scanTimer = timerBegin(0, 80, true); // timer 0, prescaler 80 (1 tick per 80us), count up
 	timerAttachInterrupt(scanTimer, &scanISR, true);
 
 	timerAlarmWrite(scanTimer, 2000000, true);
 
+	// Create tasks
 	xTaskCreatePinnedToCore(runScanner, "Scanner", TASK_STACK_SIZE, NULL, 1, NULL, 1);
 	xTaskCreatePinnedToCore(runWifi, "WiFi", TASK_STACK_SIZE, NULL, 0, NULL, 1);
 
+	// End of setup
 	Serial.println("Ending Setup");
 	tonePWM(BUZZER_PIN, BUZZER_FREQ, ALERT_TIME);
 
 	timerAlarmEnable(scanTimer);
 }
 
+/**
+ * Moves sentry and handles motion detection
+ */
 void loop()
 {
 	if (motion) {
@@ -90,6 +109,10 @@ void loop()
 	sentry.smoothStep();
 }
 
+
+/**
+ * Moves the scanner between angles in @a scannerAngles
+ */
 void runScanner(void *param)
 {
 	while (true) {
@@ -107,6 +130,7 @@ void runScanner(void *param)
 	}
 }
 
+// Interrupts for @a scanTimer and PIR pin
 void IRAM_ATTR scanISR()
 {
 	portENTER_CRITICAL_ISR(&mux);
@@ -120,6 +144,7 @@ void IRAM_ATTR pirISR()
 {
 	portENTER_CRITICAL_ISR(&mux);
 
+	// When debounce checks out, move sentry, update wifi message and stop the mechanical parts for 1s
 	if (pir.detect()) {
 		motion = true;
 		wifiPrint = true;
@@ -133,6 +158,7 @@ void IRAM_ATTR pirISR()
 	portEXIT_CRITICAL_ISR(&mux);
 }
 
+// Inits for PIR and servos
 void initPIR()
 {
 	pinMode(PIR_PIN, INPUT_PULLDOWN);
@@ -152,6 +178,9 @@ void initServo()
 	scanner.servo.write(scannerAngles[scanner.idx]);
 }
 
+/**
+ * Prints elapsed time since start of program to serial
+ */
 void printTime(unsigned long millis)
 {
 	unsigned long div = 1000 * 60 * 60;

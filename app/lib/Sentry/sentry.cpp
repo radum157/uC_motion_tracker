@@ -2,6 +2,14 @@
 
 using namespace msentry;
 
+SentryServo::SentryServo(uint8_t pin)
+{
+	servo.setPeriodHertz(SERVO_FREQ);
+	servo.attach(SENTRY_PIN, SERVO_MIN_PW, SERVO_MAX_PW);
+
+	servo.write(90);
+};
+
 SentryServo::~SentryServo()
 {
 	if (servo.attached()) {
@@ -11,6 +19,10 @@ SentryServo::~SentryServo()
 
 namespace msentry {
 
+	/**
+	 * @brief
+	 * Angle transformation in order for scanner and sentry to point to the same spot
+	 */
 	inline int scannerToSentryAngle(int angle)
 	{
 		int dist = angle - 90;
@@ -21,7 +33,7 @@ namespace msentry {
 
 void SentryServo::track()
 {
-	int angle = msentry::scannerAngles[motionIdx];
+	int angle = scannerAngles[motionIdx];
 	angle = scannerToSentryAngle(angle);
 
 	servo.write(angle);
@@ -36,6 +48,7 @@ void SentryServo::smoothStep()
 	int delayTime = SWEEP_TIME / MAX_ANGLE;
 
 	for (; currentAngle != target; currentAngle += step) {
+		// Check for interrupts
 		if (waitTime != 0) {
 			track();
 			return;
