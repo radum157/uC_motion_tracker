@@ -21,18 +21,18 @@ volatile bool wifiPrint{ false };
 hw_timer_t *scanTimer{ nullptr };
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
-void print_time(unsigned long millis);
+void printTime(unsigned long millis);
 
-void init_pir();
-void init_servo();
+void initPIR();
+void initServo();
 
 void IRAM_ATTR scanISR();
 void IRAM_ATTR pirISR();
 
-void scanner_loop(void *param);
+void runScanner(void *param);
 
 
-void power_setup()
+void powerSetup()
 {
 	Serial.println("Power setup...");
 
@@ -47,12 +47,12 @@ void setup()
 	Serial.begin(BAUD_RATE);
 	Serial.println("Beginning Setup");
 
-	init_pir();
+	initPIR();
 
-	power_setup();
-	wifi_setup();
+	powerSetup();
+	wifiSetup();
 
-	init_servo();
+	initServo();
 
 	pinMode(BUZZER_PIN, OUTPUT);
 	noTonePWM(BUZZER_PIN);
@@ -64,8 +64,8 @@ void setup()
 
 	timerAlarmWrite(scanTimer, 2000000, true);
 
-	xTaskCreatePinnedToCore(scanner_loop, "Scanner", TASK_STACK_SIZE, NULL, 1, NULL, 1);
-	xTaskCreatePinnedToCore(wifi_loop, "WiFi", TASK_STACK_SIZE, NULL, 0, NULL, 1);
+	xTaskCreatePinnedToCore(runScanner, "Scanner", TASK_STACK_SIZE, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(runWifi, "WiFi", TASK_STACK_SIZE, NULL, 0, NULL, 1);
 
 	Serial.println("Ending Setup");
 	tonePWM(BUZZER_PIN, BUZZER_FREQ, ALERT_TIME);
@@ -79,7 +79,7 @@ void loop()
 		motion = false;
 
 		Serial.print("Motion detected at: ");
-		print_time(pir.lastDebounce);
+		printTime(pir.lastDebounce);
 
 		tonePWM(BUZZER_PIN, BUZZER_FREQ, ALERT_TIME);
 
@@ -90,7 +90,7 @@ void loop()
 	sentry.smoothStep();
 }
 
-void scanner_loop(void *param)
+void runScanner(void *param)
 {
 	while (true) {
 		if (scannerMove) {
@@ -133,13 +133,13 @@ void IRAM_ATTR pirISR()
 	portEXIT_CRITICAL_ISR(&mux);
 }
 
-void init_pir()
+void initPIR()
 {
 	pinMode(PIR_PIN, INPUT_PULLDOWN);
 	attachInterrupt(digitalPinToInterrupt(PIR_PIN), pirISR, RISING);
 }
 
-void init_servo()
+void initServo()
 {
 	sentry.servo.setPeriodHertz(SERVO_FREQ);
 	sentry.servo.attach(SENTRY_PIN, SERVO_MIN_PW, SERVO_MAX_PW);
@@ -152,7 +152,7 @@ void init_servo()
 	scanner.servo.write(scannerAngles[scanner.idx]);
 }
 
-void print_time(unsigned long millis)
+void printTime(unsigned long millis)
 {
 	unsigned long div = 1000 * 60 * 60;
 

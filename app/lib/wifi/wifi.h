@@ -5,8 +5,8 @@
 
 namespace msentry {
 
-	void wifi_setup();
-	void wifi_loop(void *param);
+	void wifiSetup();
+	void runWifi(void *param);
 
 } // namespace msentry
 
