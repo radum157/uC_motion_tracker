@@ -2,14 +2,11 @@
 
 #include <utility>
 
-#include <pinned.h>
-
 namespace msentry {
 
-	class PIRSensor : PinComponent<INPUT_PULLDOWN> {
+	class PIRSensor {
 	public:
-		PIRSensor() : PinComponent<INPUT_PULLDOWN>() {};
-		PIRSensor(int8_t pin) : PinComponent<INPUT_PULLDOWN>(pin) {}
+		PIRSensor() {};
 
 		bool detect();
 

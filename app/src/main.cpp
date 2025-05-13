@@ -6,6 +6,7 @@
 #include <sentry.h>
 #include <scanner.h>
 #include <tonePWM.h>
+#include <wifi.h>
 
 using namespace msentry;
 
@@ -15,9 +16,12 @@ ScannerServo scanner;
 
 volatile bool motion{ false };
 volatile bool scannerMove{ false };
+volatile bool wifiPrint{ false };
 
 hw_timer_t *scanTimer{ nullptr };
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+
+SemaphoreHandle_t serialMux;
 
 void print_time(unsigned long millis);
 
@@ -46,7 +50,9 @@ void setup()
 	Serial.println("Beginning Setup");
 
 	init_pir();
+
 	power_setup();
+	wifi_setup();
 
 	init_servo();
 
@@ -54,12 +60,14 @@ void setup()
 
 	delay(10000);
 
-	xTaskCreatePinnedToCore(scanner_loop, "Scanner", 1000, NULL, 1, NULL, 1);
+	serialMux = xSemaphoreCreateMutex();
 
 	scanTimer = timerBegin(0, 80, true); // timer 0, prescaler 80 (1 tick per 80us), count up
 	timerAttachInterrupt(scanTimer, &scanISR, true);
 
 	timerAlarmWrite(scanTimer, 2000000, true);
+
+	xTaskCreatePinnedToCore(scanner_loop, "Scanner", TASK_STACK_SIZE, NULL, 1, NULL, 1);
 
 	Serial.println("Ending Setup");
 	tonePWM(BUZZER_PIN, BUZZER_FREQ, ALERT_TIME);
@@ -127,20 +135,16 @@ void IRAM_ATTR pirISR()
 
 void init_pir()
 {
-	pir = PIRSensor(PIR_PIN);
+	pinMode(PIR_PIN, INPUT_PULLDOWN);
 	attachInterrupt(digitalPinToInterrupt(PIR_PIN), pirISR, RISING);
 }
 
 void init_servo()
 {
-	sentry = SentryServo(SENTRY_PIN);
-
 	sentry.servo.setPeriodHertz(SERVO_FREQ);
 	sentry.servo.attach(SENTRY_PIN, SERVO_MIN_PW, SERVO_MAX_PW);
 
 	sentry.servo.write(90);
-
-	scanner = ScannerServo(SCANNER_PIN);
 
 	scanner.servo.setPeriodHertz(SERVO_FREQ);
 	scanner.servo.attach(SCANNER_PIN, SERVO_MIN_PW, SERVO_MAX_PW);

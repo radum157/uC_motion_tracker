@@ -10,14 +10,12 @@ namespace msentry {
 	class SentryServo {
 	public:
 		SentryServo() {};
-		SentryServo(int8_t pin) : pin(pin) {}
 		~SentryServo();
 
 		void track();
 		void smoothStep();
 
 		Servo servo;
-		int8_t pin{ -1 };
 
 		int currentAngle{ 90 };
 		int step{ 1 };

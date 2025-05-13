@@ -4,12 +4,12 @@ using namespace msentry;
 
 SentryServo::~SentryServo()
 {
-	if (pin > 0) {
+	if (servo.attached()) {
 		servo.detach();
 	}
 }
 
-static inline int scannerToSentryAngle(int angle)
+inline int scannerToSentryAngle(int angle)
 {
 	int dist = angle - 90;
 	return angle - dist / 3;

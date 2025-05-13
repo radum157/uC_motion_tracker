@@ -5,5 +5,9 @@
 
 #include <stdint.h>
 
-void tonePWM(uint8_t pin, unsigned int frequency, unsigned long duration = 0);
-void noTonePWM(uint8_t pin);
+namespace msentry {
+
+	void tonePWM(uint8_t pin, unsigned int frequency, unsigned long duration = 0);
+	void noTonePWM(uint8_t pin);
+
+} // namespace msentry

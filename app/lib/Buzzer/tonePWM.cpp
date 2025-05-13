@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-void tonePWM(uint8_t pin, unsigned int frequency, unsigned long duration)
+void msentry::tonePWM(uint8_t pin, unsigned int frequency, unsigned long duration)
 {
 	ledcSetup(TONE_CHANNEL, frequency, TONE_RESOLUTION);
 
@@ -15,7 +15,7 @@ void tonePWM(uint8_t pin, unsigned int frequency, unsigned long duration)
 	}
 }
 
-void noTonePWM(uint8_t pin)
+void msentry::noTonePWM(uint8_t pin)
 {
 	ledcWrite(TONE_CHANNEL, 0); // 0 duty cycle
 	ledcDetachPin(pin);

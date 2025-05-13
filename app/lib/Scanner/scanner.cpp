@@ -5,7 +5,7 @@ using namespace msentry;
 
 ScannerServo::~ScannerServo()
 {
-	if (pin > 0) {
+	if (servo.attached()) {
 		servo.detach();
 	}
 }

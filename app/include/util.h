@@ -21,6 +21,8 @@
 #define SENTRY_PIN 22		// D22
 #define PIR_PIN 23			// D23
 
+#define TASK_STACK_SIZE 800
+
 namespace msentry {
 
 	static constexpr int scannerNrAngles = 5;
