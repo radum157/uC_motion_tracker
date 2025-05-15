@@ -3,14 +3,6 @@
 
 using namespace msentry;
 
-ScannerServo::ScannerServo(uint8_t pin)
-{
-	servo.setPeriodHertz(SERVO_FREQ);
-	servo.attach(SENTRY_PIN, SERVO_MIN_PW, SERVO_MAX_PW);
-
-	servo.write(scannerAngles[idx]);
-};
-
 ScannerServo::~ScannerServo()
 {
 	if (servo.attached()) {

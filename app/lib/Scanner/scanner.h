@@ -12,8 +12,6 @@ namespace msentry {
 	class ScannerServo {
 	public:
 		ScannerServo() {};
-		ScannerServo(uint8_t pin);
-
 		~ScannerServo();
 
 		/**

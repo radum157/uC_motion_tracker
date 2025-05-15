@@ -24,6 +24,8 @@ volatile bool wifiPrint{ false };
 hw_timer_t *scanTimer{ nullptr };
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
+SemaphoreHandle_t serialMux;
+
 // Helper functions
 void printTime(unsigned long millis);
 
@@ -44,6 +46,7 @@ void powerSetup()
 
 	btStop();
 	esp_bt_controller_disable();
+	esp_bt_controller_deinit();
 
 	Serial.println("Power setup ended");
 }
@@ -69,6 +72,8 @@ void setup()
 	pinMode(BUZZER_PIN, OUTPUT);
 	noTonePWM(BUZZER_PIN);
 
+	serialMux = xSemaphoreCreateMutex();
+
 	// Calibration period
 	delay(CALIBRATION_TIME);
 
@@ -76,7 +81,7 @@ void setup()
 	scanTimer = timerBegin(0, 80, true); // timer 0, prescaler 80 (1 tick per 80us), count up
 	timerAttachInterrupt(scanTimer, &scanISR, true);
 
-	timerAlarmWrite(scanTimer, 2000000, true);
+	timerAlarmWrite(scanTimer, SCAN_TIME, true);
 
 	// Create tasks
 	xTaskCreatePinnedToCore(runScanner, "Scanner", TASK_STACK_SIZE, NULL, 1, NULL, 1);
@@ -97,12 +102,16 @@ void loop()
 	if (motion) {
 		motion = false;
 
+		xSemaphoreTake(serialMux, portMAX_DELAY);
+
 		Serial.print("Motion detected at: ");
 		printTime(pir.lastDebounce);
 
+		xSemaphoreGive(serialMux);
+
 		tonePWM(BUZZER_PIN, BUZZER_FREQ, ALERT_TIME);
 
-		vTaskDelay(sentry.waitTime / portTICK_PERIOD_MS);
+		vTaskDelay(MS_TO_PORTTICKS(sentry.waitTime));
 		sentry.waitTime = 0;
 	}
 
@@ -122,11 +131,11 @@ void runScanner(void *param)
 			pir.moving = true;
 			scanner.move();
 
-			vTaskDelay(10 / portTICK_PERIOD_MS);
+			vTaskDelay(MS_TO_PORTTICKS(10));
 			pir.moving = false;
 		}
 
-		vTaskDelay(50 / portTICK_PERIOD_MS);
+		vTaskDelay(MS_TO_PORTTICKS(50));
 	}
 }
 

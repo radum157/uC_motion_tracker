@@ -10,7 +10,6 @@ namespace msentry {
 	class SentryServo {
 	public:
 		SentryServo() {};
-		SentryServo(uint8_t pin);
 		~SentryServo();
 
 		/**

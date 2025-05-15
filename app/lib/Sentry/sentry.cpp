@@ -2,14 +2,6 @@
 
 using namespace msentry;
 
-SentryServo::SentryServo(uint8_t pin)
-{
-	servo.setPeriodHertz(SERVO_FREQ);
-	servo.attach(SENTRY_PIN, SERVO_MIN_PW, SERVO_MAX_PW);
-
-	servo.write(90);
-};
-
 SentryServo::~SentryServo()
 {
 	if (servo.attached()) {
@@ -55,9 +47,9 @@ void SentryServo::smoothStep()
 		}
 
 		servo.write(currentAngle);
-		vTaskDelay(delayTime / portTICK_PERIOD_MS);
+		vTaskDelay(MS_TO_PORTTICKS(delayTime));
 	}
 
-	vTaskDelay(delayTime / portTICK_PERIOD_MS);
+	vTaskDelay(MS_TO_PORTTICKS(delayTime));
 	step = -step;
 }

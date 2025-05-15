@@ -1,6 +1,7 @@
 #pragma once
 
-#define CONNECT_RETRIES 10 // wifi connection retry periods
+#define CONNECT_TIMEOUT 10000 	// wifi / datetime connect timeout
+#define CONNECT_RETRIES 5 		// wifi connection retry periods
 
 namespace msentry {
 

@@ -6,7 +6,7 @@
 #define WAIT_TIME 1000			// 1s
 #define MAX_ANGLE 180
 
-#define SCAN_TIME 4000			// 4s
+#define SCAN_TIME 5000000		// 5s
 
 #define SERVO_FREQ 50			// 50Hz
 #define SERVO_MIN_PW 500
@@ -21,6 +21,12 @@
 #define PIR_PIN 23				// D23
 
 #define TASK_STACK_SIZE 2048	// vtask stack size
+
+#ifdef pdMS_TO_TICKS
+#define MS_TO_PORTTICKS(ms) pdMS_TO_TICKS(ms)
+#else
+#define MS_TO_PORTTICKS(ms) (ms / 1000)
+#endif
 
 namespace msentry {
 

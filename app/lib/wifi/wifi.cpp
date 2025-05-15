@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <util.h>
 
 #include <time.h>
 
@@ -12,6 +13,7 @@
 #define GMT_OFFSET_SEC (3 * 60 * 60)	// GMT offset
 
 extern volatile bool wifiPrint;
+extern SemaphoreHandle_t serialMux;
 
 namespace msentry {
 
@@ -19,7 +21,7 @@ namespace msentry {
 	const char *ssid = "<ssid>";
 	const char *password = "<password>";
 
-	bool timeInitialized{ false };
+	volatile bool timeInitialized{ false };
 
 	// Wifi variables
 	WebServer server(80);
@@ -117,7 +119,7 @@ namespace msentry {
 		// Timeout after 10 seconds
 		unsigned long start = millis();
 
-		while (millis() - start < 10000) {
+		while (millis() - start < CONNECT_TIMEOUT) {
 			time_t now;
 			struct tm timeinfo;
 
@@ -125,28 +127,41 @@ namespace msentry {
 				return true;
 			}
 
-			vTaskDelay(500 / portTICK_PERIOD_MS);
+			vTaskDelay(MS_TO_PORTTICKS(500));
 		}
 
 		return false;
+	}
+
+	inline void startServer()
+	{
+		server.on("/", serverRoot);
+		server.on("/detect", serverDetect);
+
+		server.begin();
 	}
 
 	void wifiSetup()
 	{
 		// WiFi init
 		Serial.println("WiFi setup...");
+
 		WiFi.mode(WIFI_AP);
 
 		// Connection retry loop
-		while (WiFi.status() != WL_CONNECTED) {
-			WiFi.begin(ssid, password);
-			Serial.print("Connecting to WiFi.");
+		WiFi.begin(ssid, password);
+		Serial.print("Connecting to WiFi.");
 
-			for (int i = 0; i < CONNECT_RETRIES && WiFi.status() != WL_CONNECTED; i++) {
-				delay(1000);
-				Serial.print(".");
-			}
-			Serial.print("\n");
+		// Split delay for visual effect
+		for (int j = 0; j < 5; j++) {
+			delay(1000);
+			Serial.print(".");
+		}
+		Serial.print("\n");
+
+		if (WiFi.status() != WL_CONNECTED) {
+			Serial.println("WiFi setup failed");
+			return;
 		}
 
 		Serial.print("IP Adress: ");
@@ -163,10 +178,7 @@ namespace msentry {
 		}
 
 		// Server start
-		server.on("/", serverRoot);
-		server.on("/detect", serverDetect);
-
-		server.begin();
+		startServer();
 		Serial.println("WiFi setup ended");
 	}
 
@@ -175,13 +187,27 @@ namespace msentry {
 	 */
 	void wifiReconnect()
 	{
+		xSemaphoreTake(serialMux, portMAX_DELAY);
+
+		Serial.println("WiFi down. Reconnecting...");
+
+		xSemaphoreGive(serialMux);
+
+		WiFi.mode(WIFI_AP);
+
 		while (WiFi.status() != WL_CONNECTED) {
 			WiFi.begin(ssid, password);
-
-			for (int i = 0; i < CONNECT_RETRIES && WiFi.status() != WL_CONNECTED; i++) {
-				delay(1000);
-			}
+			vTaskDelay(MS_TO_PORTTICKS(CONNECT_TIMEOUT));
 		}
+
+		xSemaphoreTake(serialMux, portMAX_DELAY);
+
+		Serial.print("New IP: ");
+		Serial.println(WiFi.localIP());
+
+		xSemaphoreGive(serialMux);
+
+		startServer();
 	}
 
 	/**
@@ -224,9 +250,19 @@ namespace msentry {
 
 			// Check for datetime sync
 			if (!timeInitialized) {
-				date = "Time not synchronized :<\nRetrying...";
-				server.handleClient();
+				xSemaphoreTake(serialMux, portMAX_DELAY);
+
+				Serial.println("Running NTP sync...");
+
+				xSemaphoreGive(serialMux);
+
 				timeInitialized = initTime();
+
+				xSemaphoreTake(serialMux, portMAX_DELAY);
+
+				Serial.println("Sync done");
+
+				xSemaphoreGive(serialMux);
 				continue;
 			}
 
@@ -238,7 +274,7 @@ namespace msentry {
 
 			// Handle requests
 			server.handleClient();
-			vTaskDelay(50 / portTICK_PERIOD_MS);
+			vTaskDelay(MS_TO_PORTTICKS(50));
 		}
 	}
 
