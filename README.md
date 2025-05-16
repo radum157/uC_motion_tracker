@@ -77,7 +77,6 @@ The system uses FreeRTOS for task management, with separate tasks for:
 ### Prerequisites
 - PlatformIO IDE (recommended), Visual Studio Code + PlatformIO extension or Arduino IDE
 - ESP32 board support package
-- ESP32 servo external library
 
 ### Build and Upload
 1. Clone the repository

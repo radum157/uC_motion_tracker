@@ -33,7 +33,7 @@ namespace msentry {
 	const int scannerNrAngles = 5;
 	// Scanner preset angles. Used in sentry to calculate turn angle
 	const int scannerAngles[] = {
-		0, 45, 90, 135, 180
+		25, 50, 90, 130, 155
 	};
 
 } // namespace msentry
