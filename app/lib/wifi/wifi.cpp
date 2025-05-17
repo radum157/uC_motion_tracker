@@ -12,7 +12,7 @@
 #define NTP_SERVER "pool.ntp.org"		// Time sync server
 #define GMT_OFFSET_SEC (3 * 60 * 60)	// GMT offset
 
-extern volatile bool wifiPrint;
+extern bool wifiPrint;
 extern SemaphoreHandle_t serialMux;
 
 namespace msentry {
@@ -21,7 +21,7 @@ namespace msentry {
 	const char *ssid = "<ssid>";
 	const char *password = "<password>";
 
-	volatile bool timeInitialized{ false };
+	bool timeInitialized{ false };
 
 	// Wifi variables
 	WebServer server(80);
@@ -91,24 +91,6 @@ namespace msentry {
 	  )rawliteral";
 
 	/**
-	 * '/' endpoint
-	 */
-	void serverRoot()
-	{
-		server.send(200, "text/html", html);
-	}
-
-	/**
-	 * '/detect' endpoint
-	 *
-	 * @return The last detection datetime
-	 */
-	void serverDetect()
-	{
-		server.send(200, "plain/text", date);
-	}
-
-	/**
 	 * Synchronizes datetime with NTP server
 	 */
 	bool initTime(bool log = true)
@@ -135,8 +117,21 @@ namespace msentry {
 
 	inline void startServer()
 	{
-		server.on("/", serverRoot);
-		server.on("/detect", serverDetect);
+		/**
+		 * '/' endpoint
+		 */
+		server.on("/", [&]() {
+			server.send(200, "text/html", html);
+			});
+
+		/**
+		 * '/detect' endpoint
+		 *
+		 * @return The last detection datetime
+		 */
+		server.on("/detect", [&]() {
+			server.send(200, "plain/text", date);
+			});
 
 		server.begin();
 	}
@@ -274,7 +269,7 @@ namespace msentry {
 
 			// Handle requests
 			server.handleClient();
-			vTaskDelay(MS_TO_PORTTICKS(50));
+			vTaskDelay(MS_TO_PORTTICKS(200));
 		}
 	}
 

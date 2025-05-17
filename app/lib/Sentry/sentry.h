@@ -29,8 +29,8 @@ namespace msentry {
 		int currentAngle{ 90 };
 		int step{ 1 };
 
-		volatile uint32_t waitTime{ 0 };
-		volatile int motionIdx{ -1 };
+		uint32_t waitTime{ 0 };
+		int motionIdx{ -1 };
 	};
 
 } // namespace msentry

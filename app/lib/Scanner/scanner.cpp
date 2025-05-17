@@ -12,14 +12,19 @@ ScannerServo::~ScannerServo()
 
 void ScannerServo::move()
 {
+	if (ignore) {
+		ignore = false;
+		return;
+	}
+
 	idx += step;
 
 	if (idx == scannerNrAngles) {
 		step = -1;
-		idx = scannerNrAngles - 1;
+		idx = scannerNrAngles - 2;
 	} else if (idx == -1) {
 		step = 1;
-		idx = 0;
+		idx = 1;
 	}
 
 	servo.write(scannerAngles[idx]);

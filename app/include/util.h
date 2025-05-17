@@ -6,7 +6,7 @@
 #define WAIT_TIME 1000			// 1s
 #define MAX_ANGLE 180
 
-#define SCAN_TIME 5000000		// 5s
+#define SCAN_TIME 10000000		// 10s
 
 #define SERVO_FREQ 50			// 50Hz
 #define SERVO_MIN_PW 500
@@ -28,13 +28,16 @@
 #define MS_TO_PORTTICKS(ms) (ms / 1000)
 #endif
 
+/**
+ * Namespace that holds all relevant MotionSentry functionalities
+ */
 namespace msentry {
 
-	const int scannerNrAngles = 5;
 	// Scanner preset angles. Used in sentry to calculate turn angle
 	const int scannerAngles[] = {
-		25, 50, 90, 130, 155
+		30, 90, 150
 	};
+	const int scannerNrAngles = sizeof(scannerAngles) / sizeof(scannerAngles[0]);
 
 } // namespace msentry
 

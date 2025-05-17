@@ -7,18 +7,16 @@ using namespace msentry;
 bool PIRSensor::detect()
 {
 	unsigned long time = millis();
-
-	// Ignore PIR movement
-	if (moving) {
-		lastDebounce = time;
+	if (time - lastMotion < debounceTime) {
 		return false;
 	}
 
 	// Debounce
-	if (time - lastDebounce > debounceTime) {
-		lastDebounce = time;
-		return true;
+	detectCnt++;
+	if (detectCnt < detectCntThold) {
+		return false;
 	}
 
-	return false;
+	detectCnt = 0;
+	return true;
 }

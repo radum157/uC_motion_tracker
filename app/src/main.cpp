@@ -16,9 +16,9 @@ SentryServo sentry;
 ScannerServo scanner;
 
 // Interrupt variables
-volatile bool motion{ false };
-volatile bool scannerMove{ false };
-volatile bool wifiPrint{ false };
+bool motion{ false };
+bool scannerMove{ false };
+bool wifiPrint{ false };
 
 // Timers + sync
 hw_timer_t *scanTimer{ nullptr };
@@ -29,7 +29,7 @@ SemaphoreHandle_t serialMux;
 // Helper functions
 void printTime(unsigned long millis);
 
-void initPIR();
+void initPIR(unsigned long debounceTime = PIR_DELAY);
 void initServo();
 
 void IRAM_ATTR scanISR();
@@ -59,15 +59,13 @@ void setup()
 	Serial.begin(BAUD_RATE);
 	Serial.println("Beginning Setup");
 
-	// Pir first to calibrate
-	initPIR();
-
 	// Power and wifi
 	powerSetup();
 	wifiSetup();
 
 	// Peripherals
 	initServo();
+	initPIR();
 
 	pinMode(BUZZER_PIN, OUTPUT);
 	noTonePWM(BUZZER_PIN);
@@ -75,7 +73,11 @@ void setup()
 	serialMux = xSemaphoreCreateMutex();
 
 	// Calibration period
+	Serial.println("Calibrating...");
+
 	delay(CALIBRATION_TIME);
+
+	Serial.println("Calibration finsihed");
 
 	// Start interrupts and vtasks
 	scanTimer = timerBegin(0, 80, true); // timer 0, prescaler 80 (1 tick per 80us), count up
@@ -84,12 +86,16 @@ void setup()
 	timerAlarmWrite(scanTimer, SCAN_TIME, true);
 
 	// Create tasks
-	xTaskCreatePinnedToCore(runScanner, "Scanner", TASK_STACK_SIZE, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(runScanner, "Scanner", TASK_STACK_SIZE, NULL, 0, NULL, 1);
 	xTaskCreatePinnedToCore(runWifi, "WiFi", TASK_STACK_SIZE, NULL, 0, NULL, 1);
 
 	// End of setup
 	Serial.println("Ending Setup");
 	tonePWM(BUZZER_PIN, BUZZER_FREQ, ALERT_TIME);
+
+	motion = false;
+	sentry.waitTime = 0;
+	sentry.motionIdx = -1;
 
 	timerAlarmEnable(scanTimer);
 }
@@ -105,7 +111,7 @@ void loop()
 		xSemaphoreTake(serialMux, portMAX_DELAY);
 
 		Serial.print("Motion detected at: ");
-		printTime(pir.lastDebounce);
+		printTime(pir.lastMotion);
 
 		xSemaphoreGive(serialMux);
 
@@ -127,15 +133,16 @@ void runScanner(void *param)
 	while (true) {
 		if (scannerMove) {
 			scannerMove = false;
+			detachInterrupt(digitalPinToInterrupt(PIR_PIN));
 
-			pir.moving = true;
 			scanner.move();
+			vTaskDelay(MS_TO_PORTTICKS(100));
 
-			vTaskDelay(MS_TO_PORTTICKS(10));
-			pir.moving = false;
+			pir.lastMotion = millis();
+			initPIR();
 		}
 
-		vTaskDelay(MS_TO_PORTTICKS(50));
+		vTaskDelay(MS_TO_PORTTICKS(1000));
 	}
 }
 
@@ -158,20 +165,26 @@ void IRAM_ATTR pirISR()
 		motion = true;
 		wifiPrint = true;
 
+		pir.lastMotion = millis();
+		pir.debounceTime = PIR_DELAY;
+
 		sentry.motionIdx = scanner.idx;
 		sentry.waitTime = WAIT_TIME;
 
-		scanner.idx -= scanner.step;
+		scanner.ignore = true;
 	}
 
 	portEXIT_CRITICAL_ISR(&mux);
 }
 
 // Inits for PIR and servos
-void initPIR()
+void initPIR(unsigned long debounceTime)
 {
 	pinMode(PIR_PIN, INPUT_PULLDOWN);
 	attachInterrupt(digitalPinToInterrupt(PIR_PIN), pirISR, RISING);
+
+	pir.debounceTime = debounceTime;
+	pir.detectCnt = 0;
 }
 
 void initServo()

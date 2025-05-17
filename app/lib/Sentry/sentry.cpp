@@ -18,7 +18,7 @@ namespace msentry {
 	inline int scannerToSentryAngle(int angle)
 	{
 		int dist = angle - 90;
-		return angle - dist / 3;
+		return angle - dist / 2;
 	}
 
 } // namespace msentry
@@ -41,7 +41,7 @@ void SentryServo::smoothStep()
 
 	for (; currentAngle != target; currentAngle += step) {
 		// Check for interrupts
-		if (waitTime != 0) {
+		if (waitTime != 0 && motionIdx >= 0) {
 			track();
 			return;
 		}

@@ -24,6 +24,9 @@ namespace msentry {
 
 		int idx{ scannerNrAngles / 2 };
 		int step{ 1 };
+
+		// ignore next move
+		bool ignore{ false };
 	};
 
 } // namespace msentry

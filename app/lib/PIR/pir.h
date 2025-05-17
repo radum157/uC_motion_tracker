@@ -1,6 +1,7 @@
 #pragma once
 
-#define CALIBRATION_TIME 1000	// 1s
+#define CALIBRATION_TIME 30000	// 30s
+#define PIR_DELAY 3200			// 3.2s
 
 namespace msentry {
 
@@ -17,10 +18,11 @@ namespace msentry {
 		 */
 		bool detect();
 
-		unsigned long debounceTime{ 3000 };
-		volatile unsigned long lastDebounce{ 0 };
+		unsigned long lastMotion{ 0 };
+		unsigned long debounceTime{ PIR_DELAY };
 
-		volatile bool moving{ false };
+		unsigned long detectCnt{ 0 };
+		unsigned long detectCntThold{ 1 };
 	};
 
 } // namespace msentry
