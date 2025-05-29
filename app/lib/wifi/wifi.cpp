@@ -44,7 +44,7 @@ namespace msentry {
 			h1 {
 			  color: #0066cc;
 			  text-align: center;
-			  margin-bottom: 30px;
+			  margin-bottom: 10px;
 			}
 			#log {
 			  background-color: white;
@@ -65,11 +65,19 @@ namespace msentry {
 			  font-size: 14px;
 			  color: #666;
 			}
+			.messi-img {
+			  display: block;
+			  margin: 0 auto 20px auto;
+			  max-width: 100%;
+			  border-radius: 12px;
+			  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+			}
 		  </style>
 		</head>
 		<body>
 		  <div class="container">
 			<h1>ESP32 Event Log</h1>
+			<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Lionel_Messi_20180626.jpg/440px-Lionel_Messi_20180626.jpg" alt="Lionel Messi" class="messi-img">
 			<div id='log'>Waiting for event...</div>
 			<div class="status">Refreshing every 2 seconds...</div>
 		  </div>

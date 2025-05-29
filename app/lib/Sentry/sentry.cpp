@@ -18,7 +18,7 @@ namespace msentry {
 	inline int scannerToSentryAngle(int angle)
 	{
 		int dist = angle - 90;
-		return angle - dist / 2;
+		return angle - dist / 4;
 	}
 
 } // namespace msentry

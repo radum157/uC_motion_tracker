@@ -18,11 +18,11 @@ namespace msentry {
 		 */
 		bool detect();
 
-		unsigned long lastMotion{ 0 };
-		unsigned long debounceTime{ PIR_DELAY };
+		volatile unsigned long lastMotion{ 0 };
+		volatile unsigned long debounceTime{ PIR_DELAY };
 
-		unsigned long detectCnt{ 0 };
-		unsigned long detectCntThold{ 1 };
+		volatile unsigned long detectCnt{ 0 };
+		volatile unsigned long detectCntThold{ 1 };
 	};
 
 } // namespace msentry

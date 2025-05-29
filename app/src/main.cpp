@@ -65,7 +65,6 @@ void setup()
 
 	// Peripherals
 	initServo();
-	initPIR();
 
 	pinMode(BUZZER_PIN, OUTPUT);
 	noTonePWM(BUZZER_PIN);
@@ -75,9 +74,10 @@ void setup()
 	// Calibration period
 	Serial.println("Calibrating...");
 
-	delay(CALIBRATION_TIME);
+	initPIR();
+	// delay(CALIBRATION_TIME);
 
-	Serial.println("Calibration finsihed");
+	Serial.println("Calibration finished");
 
 	// Start interrupts and vtasks
 	scanTimer = timerBegin(0, 80, true); // timer 0, prescaler 80 (1 tick per 80us), count up
@@ -136,9 +136,8 @@ void runScanner(void *param)
 			detachInterrupt(digitalPinToInterrupt(PIR_PIN));
 
 			scanner.move();
-			vTaskDelay(MS_TO_PORTTICKS(100));
+			// vTaskDelay(MS_TO_PORTTICKS(50));
 
-			pir.lastMotion = millis();
 			initPIR();
 		}
 
@@ -165,13 +164,12 @@ void IRAM_ATTR pirISR()
 		motion = true;
 		wifiPrint = true;
 
-		pir.lastMotion = millis();
 		pir.debounceTime = PIR_DELAY;
 
 		sentry.motionIdx = scanner.idx;
 		sentry.waitTime = WAIT_TIME;
 
-		scanner.ignore = true;
+		// scanner.ignore = true;
 	}
 
 	portEXIT_CRITICAL_ISR(&mux);
@@ -183,6 +181,7 @@ void initPIR(unsigned long debounceTime)
 	pinMode(PIR_PIN, INPUT_PULLDOWN);
 	attachInterrupt(digitalPinToInterrupt(PIR_PIN), pirISR, RISING);
 
+	pir.lastMotion = millis();
 	pir.debounceTime = debounceTime;
 	pir.detectCnt = 0;
 }

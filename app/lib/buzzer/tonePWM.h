@@ -1,6 +1,6 @@
 #pragma once
 
-#define TONE_CHANNEL 2		//! may overlap other ledc channels
+#define TONE_CHANNEL 10		//! may overlap other ledc channels
 #define TONE_RESOLUTION 8	// 8-bit resolution
 
 #include <stdint.h>

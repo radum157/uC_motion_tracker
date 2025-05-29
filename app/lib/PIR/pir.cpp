@@ -18,5 +18,6 @@ bool PIRSensor::detect()
 	}
 
 	detectCnt = 0;
+	lastMotion = time;
 	return true;
 }

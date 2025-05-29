@@ -2,7 +2,7 @@
 
 #define BAUD_RATE 115200		// serial baud rate
 
-#define SWEEP_TIME 4000			// 4s
+#define SWEEP_TIME 6000			// 6s
 #define WAIT_TIME 1000			// 1s
 #define MAX_ANGLE 180
 
